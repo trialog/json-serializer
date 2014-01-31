@@ -34,6 +34,8 @@ class JsonSerializer
 	 */
 	protected $objectMappingIndex = 0;
 
+	protected $objectUnserializable = true;
+
 	/**
 	 * Serialize the value in JSON
 	 *
@@ -44,7 +46,8 @@ class JsonSerializer
 	public function serialize($value, $objectUnserializable = true)
 	{
 		$this->reset();
-		return json_encode($this->serializeData($value, $objectUnserializable));
+		$this->objectUnserializable = $objectUnserializable;
+		return json_encode($this->serializeData($value));
 	}
 
 	/**
@@ -66,7 +69,7 @@ class JsonSerializer
 	 * @return mixed
 	 * @throws Zumba\Exception\JsonSerializerException
 	 */
-	protected function serializeData($value, $objectUnserializable = true)
+	protected function serializeData($value)
 	{
 		if (is_scalar($value) || $value === null) {
 			return $value;
@@ -83,7 +86,7 @@ class JsonSerializer
 		if ($value instanceof \Closure) {
 			throw new JsonSerializerException('Closures are not supported in JsonSerializer');
 		}
-		return $this->serializeObject($value, $objectUnserializable);
+		return $this->serializeObject($value);
 	}
 
 	/**
@@ -92,7 +95,7 @@ class JsonSerializer
 	 * @param object $value        	
 	 * @return array
 	 */
-	protected function serializeObject($value, $objectUnserializable = true)
+	protected function serializeObject($value)
 	{
 		$ref = new ReflectionClass($value);
 		
@@ -105,7 +108,7 @@ class JsonSerializer
 		
 		$paramsToSerialize = $this->getObjectProperties($ref, $value);
 		$data = array();
-		if ($objectUnserializable) {
+		if ($this->objectUnserializable) {
 			$data[static::CLASS_IDENTIFIER_KEY] = $ref->getName();
 		}
 		$data += array_map(array(
@@ -233,5 +236,6 @@ class JsonSerializer
 		$this->objectStorage = new SplObjectStorage();
 		$this->objectMapping = array();
 		$this->objectMappingIndex = 0;
+		$this->objectUnserializable = true;
 	}
 }
